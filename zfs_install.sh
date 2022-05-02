@@ -581,6 +581,7 @@ debootstrap_installminsys_Func(){
 }
 
 remote_zbm_access_Func(){
+  echo "remote_zbm_access_Func"
 }
 
 
