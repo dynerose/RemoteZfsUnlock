@@ -702,19 +702,10 @@ systemsetupFunc_part3(){
 
 
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
-		##4.7 Create the EFI filesystem
-		##create FAT32 filesystem in EFI partition
-		apt install --yes dosfstools
-		##fstab entries
                 echo /dev/disk/by-uuid/"$blkid_part1" /boot/efi vfat defaults 0 0 >> /etc/fstab
-                echo /dev/disk/by-uuid/"$blkid_part2" /boot ext4 noatime,nofail,x-systemd.device-timeout=5s 0 1" >> /etc/fstab
-		#mount /boot/efi
-                #mount  /boot/
-
-		##If mount fails error code is 0. Script won't fail. Need the following check.
-		##Could use "mountpoint" command but not all distros have it. 
+                echo /dev/disk/by-uuid/"$blkid_part2" /boot ext4 noatime,nofail,x-systemd.device-timeout=5s 0 1 >> /etc/fstab
 		if grep /boot/efi /proc/mounts; then
-			echo "/boot/efi mounted."
+                	echo "/boot/efi mounted."
 		else
 			echo "/boot/efi not mounted."
 			exit 1
