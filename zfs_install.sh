@@ -358,7 +358,7 @@ debootstrap_part1_Func(){
 			echo "Creating partitions on disk ${diskidnum}."
 			##2.3 create bootloader partition
 			sgdisk -n1:1M:+"$EFI_boot_size"M -t1:EF00 /dev/disk/by-id/"${diskidnum}"
-
+                        sgdisk -n2:0:+1024M  -t2:8300 -c2:Boot  /dev/disk/by-id/"${diskidnum}"
                         #For a single-disk install:
                         #sgdisk -n2:0:+1024M  -t2:8300 -c2:Boot   /dev/disk/by-id/"${diskidnum}"
 		
@@ -367,11 +367,11 @@ debootstrap_part1_Func(){
 			##https://github.com/zfsonlinux/zfs/issues/7734
 			##hibernate needs swap at least same size as RAM
 			##hibernate only works with unencrypted installs
-			sgdisk -n2:0:+"$swap_size"M -t2:"$swap_hex_code" /dev/disk/by-id/"${diskidnum}"
 		
 			##2.6 Create root pool partition
 			##Unencrypted or ZFS native encryption:
-			sgdisk     -n3:0:0      -t3:BF00 /dev/disk/by-id/"${diskidnum}"
+			sgdisk -n3:0:0      -t3:BF00 /dev/disk/by-id/"${diskidnum}"
+                        sgdisk -n4:0:+"$swap_size"M -t4:"$swap_hex_code" /dev/disk/by-id/"${diskidnum}"
 		
 		done < /tmp/diskid_check_"${pool}".txt
 		sleep 2
@@ -395,10 +395,10 @@ debootstrap_createzfspools_Func(){
 				-O compression=$zfs_compression \
 				-O dnodesize=auto \
 				-O normalization=formD \
-				-O relatime=on \
-				-O xattr=sa \
+                                -O xattr=sa \
+                                -O atime=off \
 				-O encryption=aes-256-gcm -O keylocation=prompt -O keyformat=passphrase \
-				-O mountpoint=/ -R "$mountpoint" \\
+				-O mountpoint=none -R "$mountpoint" \\
 		EOF
 
 		add_zpool_disks(){
@@ -456,16 +456,18 @@ debootstrap_createzfspools_Func(){
 
 		sleep 2
 		##3.1 Create filesystem datasets to act as containers
-		zfs create -o canmount=off -o mountpoint=none "$RPOOL"/ROOT 
+		zfs create -o canmount=noauto -o mountpoint=/ "$RPOOL"/ROOT
+		#zfs create -o canmount=off -o mountpoint=none "$RPOOL"/ROOT 
 
 		##3.2 Create root filesystem dataset
 		rootzfs_full_name="ubuntu.$(date +%Y.%m.%d)"
-		zfs create -o canmount=noauto -o mountpoint=/ "$RPOOL"/ROOT/"$rootzfs_full_name" ##zfsbootmenu debian guide
+		#zfs create -o canmount=noauto -o mountpoint=/ "$RPOOL"/ROOT/"$rootzfs_full_name" ##zfsbootmenu debian guide
 		##assigns canmount=noauto on any file systems with mountpoint=/ (that is, on any additional boot environments you create).
 		##With ZFS, it is not normally necessary to use a mount command (either mount or zfs mount). 
 		##This situation is an exception because of canmount=noauto.
-		zfs mount "$RPOOL"/ROOT/"$rootzfs_full_name"
-		zpool set bootfs="$RPOOL"/ROOT/"$rootzfs_full_name" "$RPOOL"
+		zfs mount "$RPOOL"/ROOT
+		#zfs mount "$RPOOL"/ROOT/"$rootzfs_full_name"
+		#zpool set bootfs="$RPOOL"/ROOT/"$rootzfs_full_name" "$RPOOL"
 
 		##3.3 create datasets
 		##Aim is to separate OS from user data.
@@ -477,10 +479,10 @@ debootstrap_createzfspools_Func(){
 #		zfs create	"$RPOOL"/srv 						##server webserver content
 #		zfs create -o canmount=off	"$RPOOL"/usr
 #		zfs create	"$RPOOL"/usr/local					##locally compiled software
-		zfs create -o canmount=off "$RPOOL"/var 
+		zfs create -o canmount=off  setuid=off -o exec=off "$RPOOL"/var 
 		zfs create -o canmount=off "$RPOOL"/var/lib
 #		zfs create	"$RPOOL"/var/games					##game files
-		zfs create	"$RPOOL"/var/log 					##log files
+		zfs create -o com.sun:auto-snapshot=false "$RPOOL"/var/log 					##log files
 #		zfs create	"$RPOOL"/var/mail 					##local mails
 #		zfs create	"$RPOOL"/var/snap					##snaps handle revisions themselves
 #		zfs create	"$RPOOL"/var/spool					##printing tasks
@@ -583,6 +585,27 @@ remote_zbm_access_Func(){
   echo "remote_zbm_access_Func"
 }
 
+systemsetupFunc_part0(){
+
+        mkdir -p /boot/efi
+        mkdir -p /boot
+
+        
+
+
+        mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1
+        sleep 2
+        mount /boot/efi
+        ##If mount fails error code is 0. Script won't fail. Need the following check.
+        ##Could use "mountpoint" command but not all distros have it.
+        if grep /boot/efi /proc/mounts; then
+            echo "/boot/efi mounted."
+        else
+            echo "/boot/efi not mounted."
+            exit 1
+        fi
+        EOCHROOT
+}
 
 systemsetupFunc_part1(){
 
@@ -1186,13 +1209,15 @@ initialinstall(){
 	debootstrap_part1_Func
 	debootstrap_createzfspools_Func
 	debootstrap_installminsys_Func
-#	systemsetupFunc_part1 #Basic system configuration.#
-#	systemsetupFunc_part2 #Install zfs.
-#	systemsetupFunc_part3 #Format EFI partition. 
-#	systemsetupFunc_part4 #Install zfsbootmenu.
-#	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
-#	systemsetupFunc_part6 #ZFS file system mount ordering.
-#	systemsetupFunc_part7 #Samba.
+	systemsetupFunc_part1 #Basic system configuration.#
+
+	systemsetupFunc_part3 #Format EFI partition. 
+
+	systemsetupFunc_part2 #Install zfs.
+	systemsetupFunc_part4 #Install zfsbootmenu.
+	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
+	systemsetupFunc_part6 #ZFS file system mount ordering.
+	systemsetupFunc_part7 #Samba.
 	
 	logcopy(){
 		##Copy install log into new installation.
