@@ -367,11 +367,13 @@ debootstrap_part1_Func(){
 			##https://github.com/zfsonlinux/zfs/issues/7734
 			##hibernate needs swap at least same size as RAM
 			##hibernate only works with unencrypted installs
-		
+                       sgdisk -n3:0:+"$swap_size"M -t3:"$swap_hex_code" /dev/disk/by-id/"${diskidnum}"
+
+
 			##2.6 Create root pool partition
 			##Unencrypted or ZFS native encryption:
-			sgdisk -n3:0:0      -t3:BF00 /dev/disk/by-id/"${diskidnum}"
-                        sgdisk -n4:0:+"$swap_size"M -t4:"$swap_hex_code" /dev/disk/by-id/"${diskidnum}"
+
+			sgdisk -n4:0:0 -t4:BF00 /dev/disk/by-id/"${diskidnum}"
 		
 		done < /tmp/diskid_check_"${pool}".txt
 		sleep 2
@@ -404,7 +406,7 @@ debootstrap_createzfspools_Func(){
 		add_zpool_disks(){
 			while IFS= read -r diskidnum;
 			do
-				echo "/dev/disk/by-id/${diskidnum}-part3 \\" >> "$zpool_create_temp"
+				echo "/dev/disk/by-id/${diskidnum}-part4 \\" >> "$zpool_create_temp"
 			done < /tmp/diskid_check_root.txt
 		
 			sed -i '$s,\\,,' "$zpool_create_temp"
@@ -698,6 +700,16 @@ systemsetupFunc_part3(){
 	
 	identify_ubuntu_dataset_uuid
 
+        mkdir -p /boot/efi
+        mkdir -p /boot
+
+        mkfs.ext4  /dev/disk/by-id/"$DISKID"-part2
+        blkid_part2=""
+        blkid_part2="$(blkid -s UUID -o value /dev/disk/by-id/"${DISKID}"-part2)"
+	echo "$blkid_part2"
+        sleep 2
+
+        mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1 
 	mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1 
 	sleep 2
 	blkid_part1=""
@@ -709,18 +721,21 @@ systemsetupFunc_part3(){
 		##create FAT32 filesystem in EFI partition
 		apt install --yes dosfstools
 		
-		mkdir -p /boot/efi
+                mkdir -p /boot
+                mkdir -p /boot/efi
 		
 		##fstab entries
 		
-		echo /dev/disk/by-uuid/"$blkid_part1" \
-			/boot/efi vfat \
-			defaults \
-			0 0 >> /etc/fstab
+		echo /dev/disk/by-uuid/"$blkid_part1" /boot/efi vfat defaults 0 0 >> /etc/fstab
+                echo  /dev/disk/by-uuid/"$blkid_part2" /boot ext4 noatime,nofail,x-systemd.device-timeout=5s 0 1" >> /etc/fstab
 		
-##echo "PARTUUID=$(blkid -s PARTUUID -o value $DISK1-part1) /boot/efi vfat noatime,nofail,x-systemd.device-timeout=5s 0 1" >> /etc/fstab
+                ##echo "PARTUUID=$(blkid -s PARTUUID -o value $DISK1-part1) /boot/efi vfat noatime,nofail,x-systemd.device-timeout=5s 0 1" >> /etc/fstab
 		##mount from fstab entry
 		mount /boot/efi
+
+
+                mount  /boot/
+
 		##If mount fails error code is 0. Script won't fail. Need the following check.
 		##Could use "mountpoint" command but not all distros have it. 
 		if grep /boot/efi /proc/mounts; then
