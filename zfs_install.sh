@@ -398,7 +398,6 @@ debootstrap_createzfspools_Func(){
 				-O relatime=on \
 				-O xattr=sa \
 				-O encryption=aes-256-gcm -O keylocation=prompt -O keyformat=passphrase \
-#                                -O canmount=off -O mountpoint=none -R "$mountpoint" \\
 				-O mountpoint=/ -R "$mountpoint" \\
 		EOF
 
