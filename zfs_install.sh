@@ -589,25 +589,18 @@ remote_zbm_access_Func(){
 
 systemsetupFunc_part0(){
 
-        mkdir -p /boot/efi
-        mkdir -p /boot
+        mkdir -p  "$mountpoint"/boot
+        mkdir -p  "$mountpoint"/boot/efi
 
-        mkfs.ext4 /dev/disk/by-id/"${diskidnum}"-part2
-        sleep 2
-        mount  /dev/disk/by-id/"${diskidnum}"-part2 "$mountpoint"/boot/
+        while IFS= read -r diskidnum;
+        do
+          mkfs.ext4 /dev/disk/by-id/"${diskidnum}"-part2
+          sleep 2
 
-        mkdosfs -F 32 -s 1 -n EFI  /dev/disk/by-id/"${diskidnum}"-part1
-        sleep 2
-        mount  /dev/disk/by-id/"${diskidnum}"-part1 "$mountpoint"/boot/efi
+          mkdosfs -F 32 -s 1 -n EFI  /dev/disk/by-id/"${diskidnum}"-part1
+          sleep 2
 
-        ##If mount fails error code is 0. Script won't fail. Need the following check.
-        ##Could use "mountpoint" command but not all distros have it.
-        if grep /boot/efi /proc/mounts; then
-            echo "/boot/efi mounted."
-        else
-            echo "/boot/efi not mounted."
-            exit 1
-        fi
+        done < /tmp/diskid_check_root.txt
         EOCHROOT
 }
 
@@ -700,41 +693,53 @@ systemsetupFunc_part3(){
 	
 	identify_ubuntu_dataset_uuid
 
-        mkdir -p /boot/efi
-        mkdir -p /boot
+ #       mkdir -p /boot/efi
+ #       mkdir -p /boot
 
-        mkfs.ext4  /dev/disk/by-id/"$DISKID"-part2
-        blkid_part2=""
-        blkid_part2="$(blkid -s UUID -o value /dev/disk/by-id/"${DISKID}"-part2)"
-	echo "$blkid_part2"
-        sleep 2
+#        mkfs.ext4  /dev/disk/by-id/"$DISKID"-part2
+#        blkid_part2=""
+#        blkid_part2="$(blkid -s UUID -o value /dev/disk/by-id/"${DISKID}"-part2)"
+#	echo "$blkid_part2"
+#        sleep 2
 
-        mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1 
-	mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1 
-	sleep 2
-	blkid_part1=""
-	blkid_part1="$(blkid -s UUID -o value /dev/disk/by-id/"${DISKID}"-part1)"
-	echo "$blkid_part1"
-	
+#        mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1 
+#	mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1 
+#	sleep 2
+#	blkid_part1=""
+#	blkid_part1="$(blkid -s UUID -o value /dev/disk/by-id/"${DISKID}"-part1)"
+#	echo "$blkid_part1"
+
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
 		##4.7 Create the EFI filesystem
 		##create FAT32 filesystem in EFI partition
 		apt install --yes dosfstools
-		
-                mkdir -p /boot
-                mkdir -p /boot/efi
-		
+
+#                mkdir -p /boot
+#                mkdir -p /boot/efi
+
+
 		##fstab entries
-		
-		echo /dev/disk/by-uuid/"$blkid_part1" /boot/efi vfat defaults 0 0 >> /etc/fstab
-                echo  /dev/disk/by-uuid/"$blkid_part2" /boot ext4 noatime,nofail,x-systemd.device-timeout=5s 0 1" >> /etc/fstab
-		
-                ##echo "PARTUUID=$(blkid -s PARTUUID -o value $DISK1-part1) /boot/efi vfat noatime,nofail,x-systemd.device-timeout=5s 0 1" >> /etc/fstab
-		##mount from fstab entry
-		mount /boot/efi
 
+                counter1=1
+                while IFS= read -r diskidnum;
+                do
+                  if (( counter1 == 1 )); then
 
-                mount  /boot/
+                    blkid_part1=""
+                    blkid_part1="$(blkid -s UUID -o value /dev/disk/by-id/${diskidnum}-part1)"
+                    echo "$blkid_part1"
+
+                    blkid_part2=""
+                    blkid_part2="$(blkid -s UUID -o value /dev/disk/by-id/${diskidnum}-part2)"
+                    echo "$blkid_part2"
+
+                    echo /dev/disk/by-uuid/"$blkid_part1" /boot/efi vfat defaults 0 0 >> /etc/fstab
+	            echo  /dev/disk/by-uuid/"$blkid_part2" /boot ext4 noatime,nofail,x-systemd.device-timeout=5s 0 1" >> /etc/fstab
+                  fi
+                  counter1=counter+1
+                done 
+		#mount /boot/efi
+                #mount  /boot/
 
 		##If mount fails error code is 0. Script won't fail. Need the following check.
 		##Could use "mountpoint" command but not all distros have it. 
