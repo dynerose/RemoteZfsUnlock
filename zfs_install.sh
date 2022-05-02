@@ -704,6 +704,9 @@ systemsetupFunc_part3(){
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
                 echo /dev/disk/by-uuid/"$blkid_part1" /boot/efi vfat defaults 0 0 >> /etc/fstab
                 echo /dev/disk/by-uuid/"$blkid_part2" /boot ext4 noatime,nofail,x-systemd.device-timeout=5s 0 1 >> /etc/fstab
+
+#mount /boot
+#mount /boot/efi
 		if grep /boot/efi /proc/mounts; then
                 	echo "/boot/efi mounted."
 		else
@@ -1186,14 +1189,14 @@ resettime(){
 initialinstall(){
 	disclaimer
 	getdiskID_pool "root"
-	ipv6_apt_live_iso_fix #Only if ipv6_apt_fix_live_iso variable is set to "yes".
+#	ipv6_apt_live_iso_fix #Only if ipv6_apt_fix_live_iso variable is set to "yes".
 #	debootstrap_part1_Func
 #	debootstrap_createzfspools_Func
 
 #        systemsetupFunc_part0
 
 #	debootstrap_installminsys_Func
-#	systemsetupFunc_part1 #Basic system configuration.#
+	systemsetupFunc_part1 #Basic system configuration.#
 
 	systemsetupFunc_part3 #Format EFI partition. 
 
