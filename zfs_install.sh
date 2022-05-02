@@ -590,12 +590,14 @@ systemsetupFunc_part0(){
         mkdir -p /boot/efi
         mkdir -p /boot
 
-        
-
-
-        mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1
+        mkfs.ext4 /dev/disk/by-id/"${diskidnum}"-part2
         sleep 2
-        mount /boot/efi
+        mount  /dev/disk/by-id/"${diskidnum}"-part2 "$mountpoint"/boot/
+
+        mkdosfs -F 32 -s 1 -n EFI  /dev/disk/by-id/"${diskidnum}"-part1
+        sleep 2
+        mount  /dev/disk/by-id/"${diskidnum}"-part1 "$mountpoint"/boot/efi
+
         ##If mount fails error code is 0. Script won't fail. Need the following check.
         ##Could use "mountpoint" command but not all distros have it.
         if grep /boot/efi /proc/mounts; then
@@ -1208,6 +1210,9 @@ initialinstall(){
 	ipv6_apt_live_iso_fix #Only if ipv6_apt_fix_live_iso variable is set to "yes".
 	debootstrap_part1_Func
 	debootstrap_createzfspools_Func
+ 
+        systemsetupFunc_part0
+
 	debootstrap_installminsys_Func
 	systemsetupFunc_part1 #Basic system configuration.#
 
