@@ -49,14 +49,14 @@ timezone="Europe/London" #New install timezone setting.
 zfs_rpool_ashift="12" #Drive setting for zfs pool. ashift=9 means 512B sectors (used by all ancient drives), ashift=12 means 4KiB sectors (used by most modern hard drives), and ashift=13 means 8KiB sectors (used by some modern SSDs).
 
 RPOOL="rpool" #Root pool name.
-topology_root="single" #"single", "mirror", "raidz1", "raidz2", or "raidz3" topology on root pool.
-disks_root="1" #Number of disks in array for root pool. Not used with single topology.
+topology_root="raidz1" #"single", "mirror", "raidz1", "raidz2", or "raidz3" topology on root pool.
+disks_root="3" #Number of disks in array for root pool. Not used with single topology.
 EFI_boot_size="512" #EFI boot loader partition size in mebibytes (MiB).
 swap_size="4000" #Swap partition size in mebibytes (MiB). Size of swap will be larger than defined here with Raidz topologies.
 openssh="yes" #"yes" to install open-ssh server in new install.
 datapool="datapool" #Non-root drive data pool name.
-topology_data="single" #"single", "mirror", "raidz1", "raidz2", or "raidz3" topology on data pool.
-disks_data="1" #Number of disks in array for data pool. Not used with single topology.
+topology_data="raidz1" #"single", "mirror", "raidz1", "raidz2", or "raidz3" topology on data pool.
+disks_data="3" #Number of disks in array for data pool. Not used with single topology.
 datapoolmount="/mnt/$datapool" #Non-root drive data pool mount point in new install.
 zfs_dpool_ashift="12" #See notes for rpool ashift. If ashift is set too low, a significant read/write penalty is incurred. Virtually no penalty if set higher.
 zfs_compression="zstd" #"lz4" is the zfs default; "zstd" may offer better compression at a cost of higher cpu usage.
