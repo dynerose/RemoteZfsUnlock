@@ -601,7 +601,6 @@ systemsetupFunc_part0(){
           sleep 2
 
         done < /tmp/diskid_check_root.txt
-        EOCHROOT
 }
 
 systemsetupFunc_part1(){
@@ -1230,7 +1229,7 @@ initialinstall(){
 	ipv6_apt_live_iso_fix #Only if ipv6_apt_fix_live_iso variable is set to "yes".
 	debootstrap_part1_Func
 	debootstrap_createzfspools_Func
- 
+
         systemsetupFunc_part0
 
 	debootstrap_installminsys_Func
