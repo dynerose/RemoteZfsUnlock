@@ -462,7 +462,7 @@ debootstrap_createzfspools_Func(){
 		#zfs create -o canmount=off -o mountpoint=none "$RPOOL"/ROOT 
 
 		##3.2 Create root filesystem dataset
-		rootzfs_full_name="ubuntu.$(date +%Y.%m.%d)"
+#		rootzfs_full_name="ubuntu.$(date +%Y.%m.%d)"
 		#zfs create -o canmount=noauto -o mountpoint=/ "$RPOOL"/ROOT/"$rootzfs_full_name" ##zfsbootmenu debian guide
 		##assigns canmount=noauto on any file systems with mountpoint=/ (that is, on any additional boot environments you create).
 		##With ZFS, it is not normally necessary to use a mount command (either mount or zfs mount). 
@@ -481,7 +481,7 @@ debootstrap_createzfspools_Func(){
 #		zfs create	"$RPOOL"/srv 						##server webserver content
 #		zfs create -o canmount=off	"$RPOOL"/usr
 #		zfs create	"$RPOOL"/usr/local					##locally compiled software
-		zfs create -o canmount=off  setuid=off -o exec=off "$RPOOL"/var 
+		zfs create -o canmount=off -o setuid=off -o exec=off "$RPOOL"/var
 		zfs create -o canmount=off "$RPOOL"/var/lib
 #		zfs create	"$RPOOL"/var/games					##game files
 		zfs create -o com.sun:auto-snapshot=false "$RPOOL"/var/log 					##log files
