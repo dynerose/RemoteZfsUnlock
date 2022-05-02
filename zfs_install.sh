@@ -484,7 +484,7 @@ debootstrap_createzfspools_Func(){
 		zfs create -o canmount=off -o setuid=off -o exec=off "$RPOOL"/var
 		zfs create -o canmount=off "$RPOOL"/var/lib
 #		zfs create	"$RPOOL"/var/games					##game files
-		zfs create -o com.sun:auto-snapshot=false "$RPOOL"/var/log 					##log files
+		zfs create -o canmount=off -o com.sun:auto-snapshot=false "$RPOOL"/var/log 					##log files
 #		zfs create	"$RPOOL"/var/mail 					##local mails
 #		zfs create	"$RPOOL"/var/snap					##snaps handle revisions themselves
 #		zfs create	"$RPOOL"/var/spool					##printing tasks
@@ -498,10 +498,10 @@ debootstrap_createzfspools_Func(){
 
 		##optional
 		##exclude from snapshots
-		zfs create -o com.sun:auto-snapshot=false "$RPOOL"/var/cache
-		zfs create -o com.sun:auto-snapshot=false "$RPOOL"/var/tmp
-		chmod 1777 "$mountpoint"/var/tmp
-		zfs create -o com.sun:auto-snapshot=false "$RPOOL"/var/lib/docker ##Docker manages its own datasets & snapshots
+		zfs create -o canmount=off -o com.sun:auto-snapshot=false "$RPOOL"/var/cache
+		zfs create -o canmount=off -o com.sun:auto-snapshot=false "$RPOOL"/var/tmp
+#		chmod 1777 "$mountpoint"/var/tmp
+		zfs create -o canmount=off -o com.sun:auto-snapshot=false "$RPOOL"/var/lib/docker ##Docker manages its own datasets & snapshots
 
 		##Mount a tempfs at /run
 		mkdir "$mountpoint"/run
