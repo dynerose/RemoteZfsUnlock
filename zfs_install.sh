@@ -689,24 +689,9 @@ systemsetupFunc_part2(){
 }
 
 systemsetupFunc_part3(){
-	
+
 	identify_ubuntu_dataset_uuid
 
- #       mkdir -p /boot/efi
- #       mkdir -p /boot
-
-#        mkfs.ext4  /dev/disk/by-id/"$DISKID"-part2
-#        blkid_part2=""
-#        blkid_part2="$(blkid -s UUID -o value /dev/disk/by-id/"${DISKID}"-part2)"
-#	echo "$blkid_part2"
-#        sleep 2
-
-#        mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1 
-#	mkdosfs -F 32 -s 1 -n EFI /dev/disk/by-id/"$DISKID"-part1 
-#	sleep 2
-#	blkid_part1=""
-#	blkid_part1="$(blkid -s UUID -o value /dev/disk/by-id/"${DISKID}"-part1)"
-#	echo "$blkid_part1"
         blkid_part1=""
 	blkid_part1="$(blkid -s UUID -o value /dev/disk/by-id/"${DISKID}"-part1)"
 	echo "$blkid_part1"
@@ -721,9 +706,8 @@ systemsetupFunc_part3(){
 		##create FAT32 filesystem in EFI partition
 		apt install --yes dosfstools
 		##fstab entries
-
-                    echo /dev/disk/by-uuid/"$blkid_part1" /boot/efi vfat defaults 0 0 >> /etc/fstab
-	            echo  /dev/disk/by-uuid/"$blkid_part2" /boot ext4 noatime,nofail,x-systemd.device-timeout=5s 0 1" >> /etc/fstab
+                echo /dev/disk/by-uuid/"$blkid_part1" /boot/efi vfat defaults 0 0 >> /etc/fstab
+                echo /dev/disk/by-uuid/"$blkid_part2" /boot ext4 noatime,nofail,x-systemd.device-timeout=5s 0 1" >> /etc/fstab
 		#mount /boot/efi
                 #mount  /boot/
 
@@ -736,8 +720,6 @@ systemsetupFunc_part3(){
 			exit 1
 		fi
 	EOCHROOT
-
-
 }
 
 systemsetupFunc_part4(){
