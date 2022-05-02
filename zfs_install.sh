@@ -707,96 +707,10 @@ systemsetupFunc_part3(){
 	EOCHROOT
 
 
-	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
-		
-		DEBIAN_FRONTEND=noninteractive apt-get -yq install refind kexec-tools
-		apt install --yes dpkg-dev git systemd-sysv
-		
-		##Adjust timer on initial rEFInd screen
-		sed -i 's,^timeout .*,timeout $timeout_rEFInd,' /boot/efi/EFI/refind/refind.conf
-		echo REMAKE_INITRD=yes > /etc/dkms/zfs.conf
-		sed -i 's,LOAD_KEXEC=false,LOAD_KEXEC=true,' /etc/default/kexec
-		apt install -y dracut-core ##core dracut components only for zbm initramfs 
-	EOCHROOT
-
 }
 
 systemsetupFunc_part4(){
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
-		zfsbootmenuinstall(){
-			##convert rpool to use keyfile
-			echo $zfspassword > /etc/zfs/$RPOOL.key ##This file will live inside your initramfs stored ON the ZFS boot environment.
-			chmod 600 /etc/zfs/$RPOOL.key
-			zfs change-key -o keylocation=file:///etc/zfs/$RPOOL.key -o keyformat=passphrase $RPOOL
-							
-			if [ "$quiet_boot" = "yes" ]; then
-				zfs set org.zfsbootmenu:commandline="spl_hostid=\$( hostid ) ro quiet" "$RPOOL"/ROOT
-			else
-				zfs set org.zfsbootmenu:commandline="spl_hostid=\$( hostid ) ro" "$RPOOL"/ROOT
-			fi
-			##install zfsbootmenu
-			compile_zbm_git(){
-				apt install -y git make
-				cd /tmp
-				git clone 'https://github.com/zbm-dev/zfsbootmenu.git'
-				cd zfsbootmenu
-				make install
-			}
-			compile_zbm_git
-				
-			##configure zfsbootmenu
-			config_zbm(){
-				cat <<-EOF > /etc/zfsbootmenu/config.yaml
-					Global:
-					  ManageImages: true
-					  BootMountPoint: /boot/efi
-					  DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
-					Components:
-					  ImageDir: /boot/efi/EFI/ubuntu
-					  Versions: false
-					  Enabled: true
-					  syslinux:
-					    Config: /boot/syslinux/syslinux.cfg
-					    Enabled: false
-					EFI:
-					  ImageDir: /boot/efi/EFI/ubuntu
-					  Versions: false
-					  Enabled: false
-					Kernel:
-					  CommandLine: ro quiet loglevel=0
-				EOF
-			
-                		if [ "$quiet_boot" = "no" ]; then
-                    			sed -i 's,ro quiet,ro,' /etc/zfsbootmenu/config.yaml
-                		fi
-				##Omit systemd dracut modules to prevent ZBM boot breaking
-				cat <<-EOF >> /etc/zfsbootmenu/dracut.conf.d/zfsbootmenu.conf
-					omit_dracutmodules+=" systemd systemd-initrd dracut-systemd "
-				EOF
-			
-				##Install zfsbootmenu dependencies
-				apt install --yes libconfig-inifiles-perl libsort-versions-perl libboolean-perl fzf mbuffer
-				cpan 'YAML::PP'
-				update-initramfs -k all -c
-				
-				##Generate ZFSBootMenu
-				generate-zbm
-				
-				##Update refind_linux.conf
-				##zfsbootmenu command-line parameters:
-				##https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod
-				cat <<-EOF > /boot/efi/EFI/ubuntu/refind_linux.conf
-					"Boot default"  "zfsbootmenu:POOL=$RPOOL zbm.import_policy=hostid zbm.set_hostid zbm.timeout=$timeout_zbm_no_remote_access ro quiet loglevel=0"
-					"Boot to menu"  "zfsbootmenu:POOL=$RPOOL zbm.import_policy=hostid zbm.set_hostid zbm.show ro quiet loglevel=0"
-				EOF
-				
-				if [ "$quiet_boot" = "no" ]; then
-                    			sed -i 's,ro quiet,ro,' /boot/efi/EFI/ubuntu/refind_linux.conf
-                		fi
-			}
-			config_zbm	
-		}
-		zfsbootmenuinstall
 	EOCHROOT
 	
 	if [ "${remoteaccess_first_boot}" = "yes" ];
@@ -908,6 +822,9 @@ systemsetupFunc_part5(){
 		ls /usr/lib/modules
 		
 		update-initramfs -c -k all
+
+                update-grub
+                grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Ubuntu --recheck --no-floppy
 		
 	EOCHROOT
 	
