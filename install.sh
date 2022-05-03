@@ -710,7 +710,7 @@ systemsetupFunc_part5(){
 		do
 			echo "/dev/disk/by-id/${diskidnum}-part2 \\" >> "$multi_disc_swap_loc"
 		done < /tmp/diskid_check_root.txt
-		sed -i '$s,\\,,' "$zpool_create_temp" ##Remove escape characters needed for last line of EOF code block.
+#		sed -i '$s,\\,,' "$zpool_create_temp" ##Remove escape characters needed for last line of EOF code block.
 	
 		##Update fstab and cryptsetup.
 		cat >> "$multi_disc_swap_loc" <<-EOF
