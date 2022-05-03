@@ -632,16 +632,13 @@ systemsetupFunc_part2(){
 		apt update
 		apt install --no-install-recommends -y linux-headers-generic linux-image-generic ##need to use no-install-recommends otherwise installs grub
 		
-		apt install --yes --no-install-recommends dkms wget nano htop gdisk
-		
-		apt install -yq software-properties-common
-		
+#		apt install --yes --no-install-recommends dkms wget nano htop gdisk
+		apt install --yes wget nano htop gdisk openssh-server 
+#		apt install -yq software-properties-common
 #		DEBIAN_FRONTEND=noninteractive apt-get -yq install zfs-dkms
 #		apt install --yes zfsutils-linux
                 # zfs-zed
-		apt install --yes zfs-initramfs
-                apt install --yes grub-efi-amd64-signed
-                apt install --yes shim-signed
+		apt install --yes zfs-initramfs grub-efi-amd64-signed shim-signed
 		
 	EOCHROOT
 }
@@ -1157,10 +1154,9 @@ echo  mkdir -p "$mountpoint"
 
 #	debootstrap_installminsys_Func
 #	systemsetupFunc_part1 #Basic system configuration.#
+	systemsetupFunc_part2 #Install zfs.
 
-	systemsetupFunc_part3 #Format EFI partition. 
-
-#	systemsetupFunc_part2 #Install zfs.
+#	systemsetupFunc_part3 #Format EFI partition. 
 #	systemsetupFunc_part4 #Install zfsbootmenu.
 #	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
 #	systemsetupFunc_part6 #ZFS file system mount ordering.
