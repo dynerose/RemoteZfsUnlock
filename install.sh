@@ -1154,11 +1154,11 @@ echo  mkdir -p "$mountpoint"
 
 #	debootstrap_installminsys_Func
 #	systemsetupFunc_part1 #Basic system configuration.#
-	systemsetupFunc_part2 #Install zfs.
+#	systemsetupFunc_part2 #Install zfs.
 
 #	systemsetupFunc_part3 #Format EFI partition. 
-#	systemsetupFunc_part4 #Install zfsbootmenu.
-#	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
+#	systemsetupFunc_part4 #Install zfsbootmenu. remote
+	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
 #	systemsetupFunc_part6 #ZFS file system mount ordering.
 #	systemsetupFunc_part7 #Samba.
 	
