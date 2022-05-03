@@ -840,7 +840,7 @@ systemsetupFunc_part7(){
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
 		
 		##install samba mount access
-		apt install -yq cifs-utils
+#		apt install -yq cifs-utils
 		
 		##install openssh-server
 		if [ "$openssh" = "yes" ];
@@ -862,7 +862,15 @@ systemsetupFunc_part7(){
 	fi
 	
 }
-
+before_reboot(){
+mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
+#for virtual_fs_dir in dev sys proc; do
+#    if mountpoint -q "$c_zfs_mount_dir/$virtual_fs_dir"; then
+#      echo "Re-issuing umount for $c_zfs_mount_dir/$virtual_fs_dir"
+#      umount --recursive --force --lazy "$c_zfs_mount_dir/$virtual_fs_dir"
+#    fi
+zpool export -a
+}
 usersetup(){
 	##6.6 create user account and setup groups
 	zfs create -o mountpoint=/home/"$user" "$RPOOL"/home/${user}
@@ -1158,10 +1166,10 @@ echo  mkdir -p "$mountpoint"
 
 #	systemsetupFunc_part3 #Format EFI partition. 
 #	systemsetupFunc_part4 #Install zfsbootmenu. remote
-	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
+#	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
 #	systemsetupFunc_part6 #ZFS file system mount ordering.
 #	systemsetupFunc_part7 #Samba.
-	
+        before_reboot	
 	logcopy(){
 		##Copy install log into new installation.
 		if [ -d "$mountpoint" ]; then
