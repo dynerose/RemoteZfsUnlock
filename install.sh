@@ -49,8 +49,8 @@ timezone="Europe/London" #New install timezone setting.
 zfs_rpool_ashift="12" #Drive setting for zfs pool. ashift=9 means 512B sectors (used by all ancient drives), ashift=12 means 4KiB sectors (used by most modern hard drives), and ashift=13 means 8KiB sectors (used by some modern SSDs).
 
 RPOOL="rpool" #Root pool name.
-topology_root="single" #"single", "mirror", "raidz1", "raidz2", or "raidz3" topology on root pool.
-disks_root="1" #Number of disks in array for root pool. Not used with single topology.
+topology_root="raidz1" #"single", "mirror", "raidz1", "raidz2", or "raidz3" topology on root pool.
+disks_root="3" #Number of disks in array for root pool. Not used with single topology.
 EFI_boot_size="1024" #EFI boot loader partition size in mebibytes (MiB).
 swap_size="4000" #Swap partition size in mebibytes (MiB). Size of swap will be larger than defined here with Raidz topologies.
 openssh="yes" #"yes" to install open-ssh server in new install.
@@ -670,6 +670,16 @@ systemsetupFunc_part3(){
 		fi
 	EOCHROOT
 }
+systemsetupFunc_part31(){
+# /dev/disk/by-id/"$DISKID"-part2
+        identify_ubuntu_dataset_uuid
+        if [ "$disks_root" -gt 1 ]; then
+          echo "$disks_root is greater than 1"
+        else
+          echo "$disks_root is less than 2"
+        fi
+
+}
 
 systemsetupFunc_part4(){
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
@@ -778,18 +788,20 @@ systemsetupFunc_part5(){
 		addgroup --system sambashare
 	EOCHROOT
 	
-	chroot "$mountpoint" /bin/bash -x <<-"EOCHROOT"
-		##5.2 refresh initrd files
-		
-		ls /usr/lib/modules
-		
-		update-initramfs -c -k all
+}
+systemsetupFunc_part51(){
+        chroot "$mountpoint" /bin/bash -x <<-"EOCHROOT"
+                ##5.2 refresh initrd files
+
+                ls /usr/lib/modules
+
+                update-initramfs -c -k all
 
                 update-grub
                 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Ubuntu --recheck --no-floppy
-		
-	EOCHROOT
-	
+
+        EOCHROOT
+
 }
 
 systemsetupFunc_part6(){
@@ -1158,18 +1170,20 @@ echo  mkdir -p "$mountpoint"
 #	ipv6_apt_live_iso_fix #Only if ipv6_apt_fix_live_iso variable is set to "yes".
 #	debootstrap_part1_Func
 #	debootstrap_createzfspools_Func
-#        systemsetupFunc_part0
+#       systemsetupFunc_part0
 
 #	debootstrap_installminsys_Func
 #	systemsetupFunc_part1 #Basic system configuration.#
 #	systemsetupFunc_part2 #Install zfs.
 
 #	systemsetupFunc_part3 #Format EFI partition. 
-#	systemsetupFunc_part4 #Install zfsbootmenu. remote
+	systemsetupFunc_part31 #Format EFI boot partition.
+##	systemsetupFunc_part4 #Install zfsbootmenu. remote
 #	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
+#systemsetupFunc_part51
 #	systemsetupFunc_part6 #ZFS file system mount ordering.
 #	systemsetupFunc_part7 #Samba.
-        before_reboot	
+#        before_reboot	
 	logcopy(){
 		##Copy install log into new installation.
 		if [ -d "$mountpoint" ]; then
