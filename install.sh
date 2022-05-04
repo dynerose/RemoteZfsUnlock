@@ -1212,11 +1212,11 @@ echo  mkdir -p "$mountpoint"
 #	systemsetupFunc_part31 #Format EFI boot partition.
 ##	systemsetupFunc_part4 #Install zfsbootmenu. remote
 #	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
-systemsetupFunc_part52
+#systemsetupFunc_part52
 #systemsetupFunc_part51
 #	systemsetupFunc_part6 #ZFS file system mount ordering.
 	systemsetupFunc_part7 #Samba.
-#        before_reboot	
+        before_reboot	
 	logcopy(){
 		##Copy install log into new installation.
 		if [ -d "$mountpoint" ]; then
