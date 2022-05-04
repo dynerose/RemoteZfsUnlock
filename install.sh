@@ -670,28 +670,24 @@ systemsetupFunc_part3(){
 		fi
 	EOCHROOT
 }
+
 systemsetupFunc_part31(){
-# /dev/disk/by-id/"$DISKID"-part2
-        identify_ubuntu_dataset_uuid
-        if [ "$disks_root" -gt 1 ]; then
-          echo "$disks_root is greater than 1"
-        else
-          echo "$disks_root is less than 2"
+	echo "systemctl mask grub-initrd-fallback.service"
+	if [ "${disks_root}" > "1" ]; then
+                chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
+			apt install efibootmgr
+			systemctl mask grub-initrd-fallback.service
+		EOCHROOT
         fi
 
 }
 
 systemsetupFunc_part4(){
-	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
-	EOCHROOT
-	
-	if [ "${remoteaccess_first_boot}" = "yes" ];
-	then
+	if [ "${remoteaccess_first_boot}" = "yes" ]; then
 		remote_zbm_access_Func "chroot"
-	else true
 	fi
-	
 }
+
 
 systemsetupFunc_part5(){
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
@@ -777,7 +773,7 @@ systemsetupFunc_part5(){
 		;;
 
 	esac
-	
+
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
 		##4.13 mount a tmpfs to /tmp
 		cp /usr/share/systemd/tmp.mount /etc/systemd/system/
@@ -787,10 +783,31 @@ systemsetupFunc_part5(){
 		addgroup --system lxd
 		addgroup --system sambashare
 	EOCHROOT
-	
 }
+
+
 systemsetupFunc_part51(){
-        chroot "$mountpoint" /bin/bash -x <<-"EOCHROOT"
+
+	localdiskidnum=
+	i=0
+        while IFS= read -r diskidnum;
+        do
+          	if [ "$i" -gt "0" ]; then
+			dd if=$localdiskidnum  of=/dev/disk/by-id/"${diskidnum}"-part1
+		        mountpoints=/boot/efi$((i + 1));
+#			efibootmgr -c -d /dev/disk/by-id/"${diskidnum}" -p 1 -L "ubuntu2" -l '\EFI\ubuntu\shimx64.efi'
+			efibootmgr --create --disk /dev/disk/by-id/"${diskidnum}" --label "ubuntu-$((i + 1))" --loader '\EFI\ubuntu\grubx64.efi'
+
+          	fi
+
+	        if [[ "$i" -eq 0 ]]; then
+			localdiskidnum=/dev/disk/by-id/"${diskidnum}"-part1
+	        fi
+        	let "i+=1"
+        done < /tmp/diskid_check_root.txt
+
+
+        chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
                 ##5.2 refresh initrd files
 
                 ls /usr/lib/modules
@@ -801,7 +818,6 @@ systemsetupFunc_part51(){
                 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Ubuntu --recheck --no-floppy
 
         EOCHROOT
-
 }
 
 systemsetupFunc_part6(){
@@ -1177,10 +1193,10 @@ echo  mkdir -p "$mountpoint"
 #	systemsetupFunc_part2 #Install zfs.
 
 #	systemsetupFunc_part3 #Format EFI partition. 
-	systemsetupFunc_part31 #Format EFI boot partition.
+#	systemsetupFunc_part31 #Format EFI boot partition.
 ##	systemsetupFunc_part4 #Install zfsbootmenu. remote
 #	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
-#systemsetupFunc_part51
+systemsetupFunc_part51
 #	systemsetupFunc_part6 #ZFS file system mount ordering.
 #	systemsetupFunc_part7 #Samba.
 #        before_reboot	
