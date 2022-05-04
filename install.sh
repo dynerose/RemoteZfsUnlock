@@ -787,6 +787,7 @@ systemsetupFunc_part5(){
 
 
 systemsetupFunc_part51(){
+	identify_ubuntu_dataset_uuid
 
 	localdiskidnum=
 	i=0
@@ -807,6 +808,21 @@ systemsetupFunc_part51(){
         done < /tmp/diskid_check_root.txt
 
 
+        chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
+                ##5.2 refresh initrd files
+
+                ls /usr/lib/modules
+
+                update-initramfs -c -k all
+
+                update-grub
+                grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Ubuntu --recheck --no-floppy
+
+        EOCHROOT
+}
+
+systemsetupFunc_part52(){
+	identify_ubuntu_dataset_uuid
         chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
                 ##5.2 refresh initrd files
 
@@ -1196,9 +1212,10 @@ echo  mkdir -p "$mountpoint"
 #	systemsetupFunc_part31 #Format EFI boot partition.
 ##	systemsetupFunc_part4 #Install zfsbootmenu. remote
 #	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
-systemsetupFunc_part51
+systemsetupFunc_part52
+#systemsetupFunc_part51
 #	systemsetupFunc_part6 #ZFS file system mount ordering.
-#	systemsetupFunc_part7 #Samba.
+	systemsetupFunc_part7 #Samba.
 #        before_reboot	
 	logcopy(){
 		##Copy install log into new installation.
