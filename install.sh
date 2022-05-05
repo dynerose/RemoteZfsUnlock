@@ -51,7 +51,7 @@ zfs_rpool_ashift="12" #Drive setting for zfs pool. ashift=9 means 512B sectors (
 RPOOL="rpool" #Root pool name.
 topology_root="single" #"single", "mirror", "raidz1", "raidz2", or "raidz3" topology on root pool.
 disks_root="1" #Number of disks in array for root pool. Not used with single topology.
-EFI_boot_size="1024" #EFI boot loader partition size in mebibytes (MiB).
+EFI_boot_size="512" #EFI boot loader partition size in mebibytes (MiB).
 swap_size="4000" #Swap partition size in mebibytes (MiB). Size of swap will be larger than defined here with Raidz topologies.
 openssh="yes" #"yes" to install open-ssh server in new install.
 datapool="datapool" #Non-root drive data pool name.
@@ -367,15 +367,15 @@ debootstrap_part1_Func(){
 			##https://github.com/zfsonlinux/zfs/issues/7734
 			##hibernate needs swap at least same size as RAM
 			##hibernate only works with unencrypted installs
-                       sgdisk -n3:0:+"$swap_size"M -t3:"$swap_hex_code" /dev/disk/by-id/"${diskidnum}"
+                        sgdisk -n3:0:+"$swap_size"M -t3:"$swap_hex_code" /dev/disk/by-id/"${diskidnum}"
 
 
 			##2.6 Create root pool partition
 			##Unencrypted or ZFS native encryption:
 
 			sgdisk -n4:0:0 -t4:BF00 /dev/disk/by-id/"${diskidnum}"
-partprobe /dev/disk/by-id/"${diskidnum}"
-sgdisk --print /dev/disk/by-id/"${diskidnum}"
+ partprobe /dev/disk/by-id/"${diskidnum}"
+ sgdisk --print /dev/disk/by-id/"${diskidnum}"
 		
 		done < /tmp/diskid_check_"${pool}".txt
 		sleep 2
@@ -807,34 +807,13 @@ systemsetupFunc_part51(){
         	let "i+=1"
         done < /tmp/diskid_check_root.txt
 
-
         chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
-                ##5.2 refresh initrd files
-
-                ls /usr/lib/modules
-
                 update-initramfs -c -k all
-
                 update-grub
                 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Ubuntu --recheck --no-floppy
-
         EOCHROOT
 }
 
-systemsetupFunc_part52(){
-	identify_ubuntu_dataset_uuid
-        chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
-                ##5.2 refresh initrd files
-
-                ls /usr/lib/modules
-
-                update-initramfs -c -k all
-
-                update-grub
-                grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Ubuntu --recheck --no-floppy
-
-        EOCHROOT
-}
 
 systemsetupFunc_part6(){
 	
@@ -878,14 +857,10 @@ systemsetupFunc_part6(){
 }
 
 systemsetupFunc_part7(){
-	
 	identify_ubuntu_dataset_uuid
-		
 	chroot "$mountpoint" /bin/bash -x <<-EOCHROOT
-		
 		##install samba mount access
 #		apt install -yq cifs-utils
-		
 		##install openssh-server
 		if [ "$openssh" = "yes" ];
 		then
@@ -893,7 +868,6 @@ systemsetupFunc_part7(){
 		fi
 		##6.2 exit chroot
 		echo 'Exiting chroot.'
-	
 	EOCHROOT
 
 	##Copy script into new installation
@@ -904,8 +878,8 @@ systemsetupFunc_part7(){
 	else
 		echo "Error copying install script to new installation."
 	fi
-	
 }
+
 before_reboot(){
 mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
 #for virtual_fs_dir in dev sys proc; do
@@ -1200,22 +1174,21 @@ echo  mkdir -p "$mountpoint"
 
 	getdiskID_pool "root"
 	ipv6_apt_live_iso_fix #Only if ipv6_apt_fix_live_iso variable is set to "yes".
-	debootstrap_part1_Func
-	debootstrap_createzfspools_Func
-       systemsetupFunc_part0
+#debootstrap_part1_Func
+#debootstrap_createzfspools_Func
+#systemsetupFunc_part0
 
-	debootstrap_installminsys_Func
-	systemsetupFunc_part1 #Basic system configuration.#
-	systemsetupFunc_part2 #Install zfs.
+#debootstrap_installminsys_Func
+#systemsetupFunc_part1 #Basic system configuration.#
+#systemsetupFunc_part2 #Install zfs.
 
-	systemsetupFunc_part3 #Format EFI partition. 
-	systemsetupFunc_part31 #Format EFI boot partition.
+#systemsetupFunc_part3 #Format EFI partition. 
+#systemsetupFunc_part31 #Format EFI boot partition.
 ##	systemsetupFunc_part4 #Install zfsbootmenu. remote
-	systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
-systemsetupFunc_part52
-systemsetupFunc_part51
+#systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
+#systemsetupFunc_part51
 #	systemsetupFunc_part6 #ZFS file system mount ordering.
-	systemsetupFunc_part7 #Samba.
+systemsetupFunc_part7 #Samba.
 #        before_reboot	
 	logcopy(){
 		##Copy install log into new installation.
