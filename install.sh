@@ -41,6 +41,7 @@ set -euo pipefail
 ubuntuver="jammy" #Ubuntu release to install. "hirsute" (21.04). "impish" (21.10). "jammy" (22.04).
 distro_variant="server" #Ubuntu variant to install. "server" (Ubuntu server; cli only.) "desktop" (Default Ubuntu desktop install). "kubuntu" (KDE plasma desktop variant). "xubuntu" (Xfce desktop variant). "MATE" (MATE desktop variant).
 user="sa" #Username for new install.
+useremail="other@gmail.com"
 PASSWORD="Password" #Password for user in new install.
 hostname="ubuntu" #Name to identify the main system on the network. An underscore is DNS non-compliant.
 zfspassword="Password" #Password for root pool and data pool. Minimum 8 characters.
@@ -1012,19 +1013,26 @@ pyznapinstall(){
 	snapshotmanagement
 }
 
+createsshkey(){
+#ssh-keygen -t rsa -N '' -f -b 4096 -C "dynerose@gmail.com"
+ssh-keygen -t rsa -b 4096 -N '' -C "$useremail" -f /home/"$user"/.ssh/remoteunlock.rsa
+}
+
 setupremoteaccess(){
-	if [ -f /etc/zfsbootmenu/dracut.conf.d/dropbear.conf ];
-	then echo "Remote access already appears to be installed owing to the presence of /etc/zfsbootmenu/dracut.conf.d/dropbear.conf. Install cancelled."
-	else 
+	if [ -f /etc/dropbear/initramfs/dropbear.conf ];
+#	if [ -f /etc/zfsbootmenu/dracut.conf.d/dropbear.conf ];
+	then echo "Remote access already appears to be installed owing to the presence of /etc/dropbear/initramfs/dropbear.conf. Install cancelled."
+	else
 		disclaimer
-		remote_zbm_access_Func "base"
-		sed -i 's,#dropbear_acl,dropbear_acl,' /etc/zfsbootmenu/dracut.conf.d/dropbear.conf
+		# remote_zbm_access_Func "base"
+		# sed -i 's,#dropbear_acl,dropbear_acl,' /etc/zfsbootmenu/dracut.conf.d/dropbear.conf
 		mkdir -p /home/"$user"/.ssh
 		touch /home/"$user"/.ssh/authorized_keys
 		chmod 644 /home/"$user"/.ssh/authorized_keys
 		chown "$user":"$user" /home/"$user"/.ssh/authorized_keys
+		createsshkey
 		#hostname -I
-		echo "Zfsbootmenu remote access installed. Connect as root on port 222 during boot: "ssh root@{IP_ADDRESS or FQDN of zfsbootmenu}" -p 222"
+		echo "Remote unlock zfs access installed. Connect as root on port 2222 during boot: "ssh root@{IP_ADDRESS or FQDN of zfsbootmenu}" -p 2222"
 		echo "Your SSH public key must be placed in "/home/$user/.ssh/authorized_keys" prior to reboot or remote access will not work."
 		echo "You can add your remote user key from the remote user's terminal using: "ssh-copy-id -i \~/.ssh/id_rsa.pub $user@{IP_ADDRESS or FQDN of the server}""
 		echo "Run \"generate-zbm\" after copying across the remote user's public ssh key into the authorized_keys file."
