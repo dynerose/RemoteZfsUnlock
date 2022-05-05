@@ -48,7 +48,7 @@ locale="en_GB.UTF-8" #New install language setting.
 timezone="Europe/London" #New install timezone setting.
 zfs_rpool_ashift="12" #Drive setting for zfs pool. ashift=9 means 512B sectors (used by all ancient drives), ashift=12 means 4KiB sectors (used by most modern hard drives), and ashift=13 means 8KiB sectors (used by some modern SSDs).
 
-RPOOL="rpool" #Root pool name.
+RPOOL="rootpool" #Root pool name.
 topology_root="single" #"single", "mirror", "raidz1", "raidz2", or "raidz3" topology on root pool.
 disks_root="1" #Number of disks in array for root pool. Not used with single topology.
 EFI_boot_size="512" #EFI boot loader partition size in mebibytes (MiB).
@@ -1210,10 +1210,10 @@ systemsetupFunc_part7 #Samba.
 postreboot(){
 	disclaimer
 	usersetup #Create user account and setup groups.
-	distroinstall #Upgrade the minimal system.
+#	distroinstall #Upgrade the minimal system.
 	logcompress #Disable log compression.
-	dpkg-reconfigure keyboard-configuration && setupcon #Configure keyboard and console.
-	pyznapinstall #Snapshot management.
+#	dpkg-reconfigure keyboard-configuration && setupcon #Configure keyboard and console.
+#	pyznapinstall #Snapshot management.
 	
 	echo "Install complete: ${distro_variant}."
 }
