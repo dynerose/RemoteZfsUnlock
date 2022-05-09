@@ -1039,7 +1039,28 @@ setup_dropbear(){
 		DROPBEAR_OPTIONS="-p "$remoteaccess_port" -I 180 -j -k -s"
 	EOF
 #	cp /etc/initramfs-tools/initramfs.conf  /etc/initramfs-tools/initramfs.conf.old
+
+
+	#	cp /etc/initramfs-tools/initramfs.conf /etc/initramfs-tools/initramfs.conf.old
+
+	cat > /etc/initramfs-tools/initramfs.conf <<-EOF
+		DEVICE=$ethernetinterface
+		IP=$remoteaccess_ip::$remoteaccess_bridge_ip:$remoteaccess_netmask.0::$ethernetinterface:off
+	EOF
+	update-initramfs -u
+
+	touch /etc/dropbear/initramfs/authorized_key
+	chmod 600 /etc/dropbear/initramfs/authorized_key
+
+	cat /home/"$user"/.ssh/remote_unlock_dropbear.pub >> /etc/dropbear/initramfs/authorized_keys
+	update-initramfs -u
 }
+
+zfs_unlocks(){
+# cat > /usr/share/initramfs-tools/zfsunlock 
+echo "Remote access already appears /usr/share/initramfs-tools/zfsunlock"
+}
+
 setupremoteaccess(){
 	if [ -f /etc/dropbear/initramfs/dropbear.conf ];
 #	if [ -f /etc/zfsbootmenu/dracut.conf.d/dropbear.conf ];
