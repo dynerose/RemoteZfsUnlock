@@ -74,7 +74,12 @@ ipv6_apt_fix_live_iso="no" #Try setting to "yes" gif apt-get is slow in the ubun
 remoteaccess_hostname="zbm" #Name to identify the zfsbootmenu system on the network.
 remoteaccess_ip_config="static" #"static" or "dhcp". Manual or automatic IP assignment for zfsbootmenu remote access.
 remoteaccess_ip="192.168.100.10" #Remote access IP address to connect to ZFSBootMenu. Not used for "dhcp" automatic IP configuration.
+remoteaccess_bridge_ip="192.168.100.2"
+remoteacces_port=2222
 remoteaccess_netmask="255.255.255.0" #Remote access subnet mask. Not used for "dhcp" automatic IP configuration.
+ethernetinterface="$(basename "$(find /sys/class/net -maxdepth 1 -mindepth 1 -name "${ethprefix}*")")"
+echo "$ethernetinterface"
+
 
 ##Check for root priviliges
 if [ "$(id -u)" -ne 0 ]; then
@@ -572,8 +577,8 @@ systemsetupFunc_part1(){
 	##4.2 configure network interface
 
 	##get ethernet interface
-	ethernetinterface="$(basename "$(find /sys/class/net -maxdepth 1 -mindepth 1 -name "${ethprefix}*")")"
-	echo "$ethernetinterface"
+#	ethernetinterface="$(basename "$(find /sys/class/net -maxdepth 1 -mindepth 1 -name "${ethprefix}*")")"
+#	echo "$ethernetinterface"
 
 	##troubleshoot: sudo netplan --debug generate
 	cat > "$mountpoint"/etc/netplan/01-"$ethernetinterface".yaml <<-EOF
@@ -1015,9 +1020,26 @@ pyznapinstall(){
 
 createsshkey(){
 #ssh-keygen -t rsa -N '' -f -b 4096 -C "dynerose@gmail.com"
-ssh-keygen -t rsa -b 4096 -N '' -C "$useremail" -f /home/"$user"/.ssh/remoteunlock.rsa
+	mkdir -p /home/"$user"/.ssh
+        chmod 700 /home/"$user"/.ssh
+        touch /home/"$user"/.ssh/authorized_keys
+        chmod 644 /home/"$user"/.ssh/authorized_keys
+        chown "$user":"$user" /home/"$user"/.ssh/authorized_keys
+        rm /home/"$user"/.ssh/remote_unlock_dropbear*.*
+#       ssh-keygen -t rsa -b 4096 -N '' -C "$useremail" -f /home/"$user"/.ssh/remote_unlock_dropbear
+        ssh-keygen -t ed25519 -N '' -C "$useremail" -f /home/"$user"/.ssh/remote_unlock_dropbear
+        chown "$user":"$user" /home/"$user"/.ssh/remote_unlock_dropbear*.*
+        #ssh-copy-id -p 1992 sa@192.168.100.10
+        cat /home/$user/.ssh/remote_unlock_dropbear.pub >> /home/"$user"/.ssh/authorized_keys
 }
 
+setup_dropbear(){
+#	cp /etc/dropbear/initramfs/dropbear.conf /etc/dropbear/initramfs/dropbear.conf.old
+	cat > /etc/dropbear/initramfs/dropbear.conf <<-EOF
+		DROPBEAR_OPTIONS="-p "$remoteaccess_port" -I 180 -j -k -s"
+	EOF
+#	cp /etc/initramfs-tools/initramfs.conf  /etc/initramfs-tools/initramfs.conf.old
+}
 setupremoteaccess(){
 	if [ -f /etc/dropbear/initramfs/dropbear.conf ];
 #	if [ -f /etc/zfsbootmenu/dracut.conf.d/dropbear.conf ];
@@ -1026,10 +1048,6 @@ setupremoteaccess(){
 		disclaimer
 		# remote_zbm_access_Func "base"
 		# sed -i 's,#dropbear_acl,dropbear_acl,' /etc/zfsbootmenu/dracut.conf.d/dropbear.conf
-		mkdir -p /home/"$user"/.ssh
-		touch /home/"$user"/.ssh/authorized_keys
-		chmod 644 /home/"$user"/.ssh/authorized_keys
-		chown "$user":"$user" /home/"$user"/.ssh/authorized_keys
 		createsshkey
 		#hostname -I
 		echo "Remote unlock zfs access installed. Connect as root on port 2222 during boot: "ssh root@{IP_ADDRESS or FQDN of zfsbootmenu}" -p 2222"
