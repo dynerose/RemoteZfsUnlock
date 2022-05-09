@@ -1079,6 +1079,61 @@ setupremoteaccess(){
 
 }
 
+setup_kodi(){
+apt install -y software-properties-common
+add-apt-repository ppa:team-xbmc/ppa
+apt install kodi xinit xorg dbus-x11 xserver-xorg-video-intel xserver-xorg-legacy pulseaudio upower -y --no-install-recommends --no-install-suggests
+adduser --disabled-password --disabled-login --gecos "" kodi
+
+# add user to groups
+usermod -a -G audio,video,input,dialout,plugdev,tty kodi
+
+# edit /etc/X11/Xwrapper.config and replace allowed_users=console for allowed_users=anybody
+sed -ie 's/allowed_users=console/allowed_users=anybody/g' /etc/X11/Xwrapper.config
+
+# add to the end of /etc/X11/Xwrapper.config
+echo "needs_root_rights=yes" >> /etc/X11/Xwrapper.config
+
+cat > /etc/systemd/system/kodi.service << EOFD
+[Unit]
+Description = Kodi Media Center
+
+# if you don't need the MySQL DB backend, this should be sufficient
+After = systemd-user-sessions.service network.target sound.target
+
+# if you need the MySQL DB backend, use this block instead of the previous
+# After = systemd-user-sessions.service network.target sound.target mysql.service
+# Wants = mysql.service
+
+[Service]
+User = kodi
+Group = kodi
+Type = simple
+#PAMName = login # you might want to try this one, did not work on all systems
+ExecStart = /usr/bin/xinit /usr/bin/dbus-launch --exit-with-session /usr/bin/kodi-standalone -- :0 -nolisten tcp vt7
+Restart = on-abort
+RestartSec = 5
+
+[Install]
+WantedBy = multi-user.target
+EOFD
+
+# CP powermenu_in_kodi.pkla to the correct place
+#cp powermenu_in_kodi.pkla 
+cat >/etc/polkit-1/localauthority/50-local.d/powermenu_in_kodi.pkla  << EOFD
+/etc/polkit-1/localauthority/50-local.d/powermenu_in_kodi.pkla
+[Actions for kodi user]
+Identity=unix-user:kodi
+Action=org.freedesktop.upower.*;org.freedesktop.consolekit.system.*;org.freedesktop.udisks.*;org.freedesktop.login1.*
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+EOFD
+
+# Start Kodi on boot
+systemctl enable kodi
+}
+
 createdatapool(){
 	disclaimer
 		
