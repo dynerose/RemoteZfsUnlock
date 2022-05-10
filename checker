@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+
+function checker() { 
+        which "$1" | grep -o "$1" > /dev/null &&  return 0 || return 1 
+}
+
+if checker "$1" == 0 ; then echo "Installed"; else echo "Not Installed!"; fi
+
+function getreq {
+dpkg-query --show  "$1"
+if [ "$?" = "0" ];
+then
+    echo "$1" found
+else
+    echo "$1" not found. Please approve installation.
+    sudo apt-get install "$1"
+    if [ "$?" = "0" ];
+    then echo "$1" installed successfully.
+    fi
+fi
+}
+getreq  "$1" 

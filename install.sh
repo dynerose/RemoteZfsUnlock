@@ -1070,6 +1070,7 @@ setupremoteaccess(){
 		# remote_zbm_access_Func "base"
 		# sed -i 's,#dropbear_acl,dropbear_acl,' /etc/zfsbootmenu/dracut.conf.d/dropbear.conf
 		createsshkey
+		setup_dropbear
 		#hostname -I
 		echo "Remote unlock zfs access installed. Connect as root on port 2222 during boot: "ssh root@{IP_ADDRESS or FQDN of zfsbootmenu}" -p 2222"
 		echo "Your SSH public key must be placed in "/home/$user/.ssh/authorized_keys" prior to reboot or remote access will not work."
@@ -1079,7 +1080,16 @@ setupremoteaccess(){
 
 }
 
+function checker() {
+	which "$1" | grep -o "$1" > /dev/null &&  return 0 || return 1
+}
+
 setup_kodi(){
+
+	if checker "kodi" == 0 ; then echo "Installed"; 
+	else 
+		echo "Not Installed!";
+
 apt install -y software-properties-common
 add-apt-repository ppa:team-xbmc/ppa
 apt install kodi xinit xorg dbus-x11 xserver-xorg-video-intel xserver-xorg-legacy pulseaudio upower -y --no-install-recommends --no-install-suggests
@@ -1132,7 +1142,112 @@ EOFD
 
 # Start Kodi on boot
 systemctl enable kodi
+fi
 }
+
+
+setup_samba(){
+        if checker "kodi" == 0 ; then echo "Installed";
+        else
+		echo "Not Installed!";
+#samba-server
+		apt install -y samba smbclient cifs-utils
+#mkdir /smb-public
+#mkdir /smb-private
+cp /etc/samba/smb.conf /etc/samba/smb.conf.old
+cat > [global] << EOFD
+   unix charset = UTF-8
+   workgroup = WORKGROUP
+   server string = %h server (Samba, Ubuntu)
+   log file = /var/log/samba/log.%m
+   log level = 1
+   max log size = 1000
+   logging = file
+   panic action = /usr/share/samba/panic-action %d
+   server role = standalone server
+   obey pam restrictions = yes
+   unix password sync = yes
+   passwd program = /usr/bin/passwd %u
+   passwd chat = *Enter\snew\s*\spassword:* %n\n *Retype\snew\s*\spassword:* %n\n *password\supdated\ssuccessfully* .
+   pam password change = yes
+   map to guest = bad user
+   usershare allow guests = yes
+
+
+   min protocol = SMB2
+# For samba version 4.x, you can set
+#	protocol = SMB3
+[printers]
+   comment = All Printers
+   browseable = no
+   path = /var/spool/samba
+   printable = yes
+   guest ok = no
+   read only = yes
+   create mask = 0700
+[print$]
+   comment = Printer Drivers
+   path = /var/lib/samba/printers
+   browseable = yes
+   read only = yes
+   guest ok = no
+[homes]
+   comment = Home Directories
+   browseable = yes
+   read only = no
+   create mask = 0700
+   directory mask = 0700
+   valid users = %S
+[publicshare]
+   path = /smb-public
+   writable = yes
+   guest ok = yes
+   guest only = yes
+   force create mode = 775
+   force directory mode = 775
+[privateshare]
+   path = /smb-private
+   writable = yes
+   guest ok = no
+   valid users = @smbinternal
+   force create mode = 770
+   force directory mode = 770
+   inherit permissions = yes
+EOFD
+	groupadd smbinternal
+	chgrp -R smbinternal /smb-private/
+	chgrp -R smbinternal /smb-public
+	chmod 2770 /smb-private/
+	chmod 2775 /smb-public
+	useradd -M -s /sbin/nologin demouser
+	usermod -aG smbinternal demouser
+	smbpasswd -a demouser
+	smbpasswd -e demouser
+	testparm
+	systemctl enable smbd
+	systemctl restart smbd
+#	systemctl restart smbd.service
+
+	mkdir /smb-private/demofolder-priv /smb-public/demofolder-pub
+	touch /smb-private/demofile-priv /smb-public/demofile-pub
+#	ufw allow from 192.168.59.0/24 to any app Samba
+fi
+}
+
+createutility(){
+        if checker "docker" == 0 ; then echo "Installed";
+        else
+                echo "Not Installed!";
+        fi
+}
+
+createdocker(){
+	if checker "docker" == 0 ; then echo "Installed";
+	else
+        	echo "Not Installed!";
+	fi
+}
+
 
 createdatapool(){
 	disclaimer
@@ -1341,10 +1456,33 @@ case "${1-default}" in
 		read -r _
 		createdatapool
 	;;
+	kodi)
+                echo "Setup Kodi"
+                read -r _
+                setup_kodi
+        ;;
+	samba)
+                echo "Setup Kodi"
+                read -r _
+                setup_samba
+        ;;
 	*)
-		echo -e "Usage: $0 initial | postreboot | remoteaccess | datapool"
+		echo -e "Usage: $0 initial | postreboot | remoteaccess | datapool | kodi | samba"
 	;;
 esac
 
 date
 exit 0
+
+
+#smbclient //sambaserver/share -U sambausername
+#Example:
+# smbclient //192.168.122.52/user1 -U user1
+
+#You can mount a samba share to a directory in your local Linux system using the mount and cifs type option.
+# mkdir -p ~/mounts/shares
+# mount -t cifs -o username=user1 //192.168.122.52/user1 ~/mounts/shares
+# df -h
+
+#You can use fstab file to persist Samba shares mounting through system reboots. In my example, I have the following line added to the end of /ect/fstab file.
+#//192.168.122.52/user1  /mnt/shares cifs credentials=/.sambacreds 0 0
