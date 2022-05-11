@@ -1244,7 +1244,7 @@ createutility(){
 createdocker(){
 	if checker "docker" == 0 ; then echo "Installed";
 	else
-        	echo "Not Installed!";
+echo "Not Installed!"
 sudo apt install -y apt-transport-https ca-certificates curl software-properties-common gnupg lsb-release
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 sudo echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
@@ -1256,18 +1256,15 @@ sudo usermod -aG docker ${USER}
 su - ${USER}
 groups
 sudo usermod -aG docker username
-
 #https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04
-
 systemctl status docker
 sudo systemctl start docker.service
 sudo systemctl enable docker.service
-
 sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 docker-compose --version
 #docker-compose up -d
-	fi
+fi
 }
 
 
@@ -1494,8 +1491,14 @@ case "${1-default}" in
                 read -r _
                 setup_samba
         ;;
+        docker)
+                echo "Setup Docker"
+                read -r _
+                createdocker
+        ;;
+
 	*)
-		echo -e "Usage: $0 initial | postreboot | remoteaccess | datapool | kodi | samba"
+		echo -e "Usage: $0 initial | postreboot | remoteaccess | datapool | kodi | samba | docker"
 	;;
 esac
 
