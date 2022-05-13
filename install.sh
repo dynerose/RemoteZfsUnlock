@@ -1037,7 +1037,9 @@ createsshkey(){
         touch /home/"$user"/.ssh/authorized_keys
         chmod 644 /home/"$user"/.ssh/authorized_keys
         chown "$user":"$user" /home/"$user"/.ssh/authorized_keys
-        rm /home/"$user"/.ssh/remote_unlock_dropbear*.*
+	if [ -f /home/"$user"/.ssh/remote_unlock_dropbear*.* ]; then
+		rm /home/"$user"/.ssh/remote_unlock_dropbear.pub
+	fi
 #       ssh-keygen -t rsa -b 4096 -N '' -C "$useremail" -f /home/"$user"/.ssh/remote_unlock_dropbear
         ssh-keygen -t ed25519 -N '' -C "$useremail" -f /home/"$user"/.ssh/remote_unlock_dropbear
         chown "$user":"$user" /home/"$user"/.ssh/remote_unlock_dropbear*.*
@@ -1046,26 +1048,26 @@ createsshkey(){
 }
 
 setup_dropbear(){
-#	cp /etc/dropbear/initramfs/dropbear.conf /etc/dropbear/initramfs/dropbear.conf.old
-	cat > /etc/dropbear/initramfs/dropbear.conf <<-EOF
-		DROPBEAR_OPTIONS="-p "$remoteaccess_port" -I 180 -j -k -s"
-	EOF
-#	cp /etc/initramfs-tools/initramfs.conf  /etc/initramfs-tools/initramfs.conf.old
-
-
-	#	cp /etc/initramfs-tools/initramfs.conf /etc/initramfs-tools/initramfs.conf.old
-
-	cat > /etc/initramfs-tools/initramfs.conf <<-EOF
-		DEVICE=$ethernetinterface
-		IP=$remoteaccess_ip::$remoteaccess_bridge_ip:$remoteaccess_netmask.0::$ethernetinterface:off
-	EOF
-	update-initramfs -u
-
-	touch /etc/dropbear/initramfs/authorized_key
-	chmod 600 /etc/dropbear/initramfs/authorized_key
-
-	cat /home/"$user"/.ssh/remote_unlock_dropbear.pub >> /etc/dropbear/initramfs/authorized_keys
-	update-initramfs -u
+	if [ -f /etc/dropbear/initramfs/dropbear.conf  ]; then
+		echo "dropbear is installed"
+	else
+		apt install -y dropbear-initramfs
+		#	cp /etc/dropbear/initramfs/dropbear.conf /etc/dropbear/initramfs/dropbear.conf.old
+		cat > /etc/dropbear/initramfs/dropbear.conf <<-EOF
+			DROPBEAR_OPTIONS="-p "$remoteaccess_port" -I 180 -j -k -s"
+		EOF
+		#	cp /etc/initramfs-tools/initramfs.conf  /etc/initramfs-tools/initramfs.conf.old
+		#	cp /etc/initramfs-tools/initramfs.conf /etc/initramfs-tools/initramfs.conf.old
+		cat > /etc/initramfs-tools/initramfs.conf <<-EOF
+			DEVICE=$ethernetinterface
+			IP=$remoteaccess_ip::$remoteaccess_bridge_ip:$remoteaccess_netmask.0::$ethernetinterface:off
+		EOF
+		update-initramfs -u
+		touch /etc/dropbear/initramfs/authorized_key
+		chmod 600 /etc/dropbear/initramfs/authorized_key
+		cat /home/"$user"/.ssh/remote_unlock_dropbear.pub >> /etc/dropbear/initramfs/authorized_keys
+		update-initramfs -u
+	fi
 }
 
 zfs_unlocks(){
