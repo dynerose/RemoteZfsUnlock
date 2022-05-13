@@ -1474,7 +1474,7 @@ postreboot(){
 setup_necessary(){
 echo "1."
 apt-get -y install aptitude
-apt install -y mc pv htop 
+apt install -y mc pv htop rsync
 echo "2."
 apt install -y build-essential
 echo "3."
