@@ -817,7 +817,7 @@ systemsetupFunc_part51(){
                 update-initramfs -c -k all
                 update-grub
                 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Ubuntu --recheck --no-floppy
-        EOCHROOT
+	EOCHROOT
 }
 
 
@@ -1268,12 +1268,6 @@ fi
 }
 
 
-createdockerutility(){
-        if checker "docker" == 0 ; then echo "Installed";
-        else
-
-	fi
-}
 createdatapool(){
 	disclaimer
 		
@@ -1416,21 +1410,21 @@ echo  mkdir -p "$mountpoint"
 
 	getdiskID_pool "root"
 	ipv6_apt_live_iso_fix #Only if ipv6_apt_fix_live_iso variable is set to "yes".
-#debootstrap_part1_Func
-#debootstrap_createzfspools_Func
-#systemsetupFunc_part0
+debootstrap_part1_Func
+debootstrap_createzfspools_Func
+systemsetupFunc_part0
 
-#debootstrap_installminsys_Func
-#systemsetupFunc_part1 #Basic system configuration.#
-#systemsetupFunc_part2 #Install zfs.
+debootstrap_installminsys_Func
+systemsetupFunc_part1 #Basic system configuration.#
+systemsetupFunc_part2 #Install zfs.
 
-#systemsetupFunc_part3 #Format EFI partition. 
-#systemsetupFunc_part31 #Format EFI boot partition.
-##	systemsetupFunc_part4 #Install zfsbootmenu. remote
-#systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
-#systemsetupFunc_part51
+systemsetupFunc_part3 #Format EFI partition. 
+systemsetupFunc_part31 #Format EFI boot partition.
+#	systemsetupFunc_part4 #Install zfsbootmenu. remote
+systemsetupFunc_part5 #Config swap, tmpfs, rootpass.
+systemsetupFunc_part51
 #	systemsetupFunc_part6 #ZFS file system mount ordering.
-systemsetupFunc_part7 #Samba.
+#systemsetupFunc_part7 #Samba.
 #        before_reboot	
 	logcopy(){
 		##Copy install log into new installation.
@@ -1496,9 +1490,15 @@ case "${1-default}" in
                 read -r _
                 createdocker
         ;;
+        vege)
+                echo "Setup Docker"
+                read -r _
+		systemsetupFunc_part7
+                before_reboot
+        ;;
 
 	*)
-		echo -e "Usage: $0 initial | postreboot | remoteaccess | datapool | kodi | samba | docker"
+		echo -e "Usage: $0 initial | postreboot | remoteaccess | datapool | kodi | samba | docker | vege"
 	;;
 esac
 
