@@ -80,7 +80,6 @@ remoteaccess_netmask="255.255.255.0" #Remote access subnet mask. Not used for "d
 ethernetinterface="$(basename "$(find /sys/class/net -maxdepth 1 -mindepth 1 -name "${ethprefix}*")")"
 echo "$ethernetinterface"
 
-
 ##Check for root priviliges
 if [ "$(id -u)" -ne 0 ]; then
    echo "Please run as root."
@@ -1472,6 +1471,25 @@ postreboot(){
 	echo "Install complete: ${distro_variant}."
 }
 
+setup_necessary(){
+echo "1."
+apt install -y mc pv htop
+echo "2."
+apt install -y build-essential
+echo "3."
+apt install -y net-tools nmap dnsutils  
+echo "4."
+apt install -y curl  git
+echo "5."
+apt install -y p7zip-full p7zip-rar
+cd $BACKUPPATH
+# apdatapoolmount
+BACKUPPATH=$datapoolmount\BACKUPS
+mkdir -p $BACKUPPATH
+wget https://github.com/teejee2008/aptik/releases/download/v18.8/aptik-v18.8-amd64.deb
+dpkg -i aptik-v18.8-amd64.deb
+}
+
 case "${1-default}" in
 	initial)
 		echo "Running initial install. Press Enter to Continue or CTRL+C to abort."
@@ -1508,6 +1526,12 @@ case "${1-default}" in
                 read -r _
                 createdocker
         ;;
+	necessary)
+                echo "Setup necessary"
+                read -r _
+                setup_necessary
+        ;;
+
         vege)
                 echo "Setup vege"
                 read -r _
@@ -1516,7 +1540,7 @@ case "${1-default}" in
         ;;
 
 	*)
-		echo -e "Usage: $0 initial | postreboot | remoteaccess | datapool | kodi | samba | docker | vege"
+		echo -e "Usage: $0 initial | postreboot | remoteaccess | datapool | kodi | samba | docker | necessary | vege"
 	;;
 esac
 
