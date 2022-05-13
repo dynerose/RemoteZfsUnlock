@@ -581,21 +581,21 @@ systemsetupFunc_part1(){
 #	echo "$ethernetinterface"
 
 	##troubleshoot: sudo netplan --debug generate
-	cat > "$mountpoint"/etc/netplan/01-"$ethernetinterface".yaml <<-EOF
-		network:
-		  version: 2
-                  renderer: networkd
-		  ethernets:
-		    $ethernetinterface:
-		      dhcp4: no
-                      addresses:
-                        - 192.168.100.10/24
-                      gateway4: 192.168.100.2
-                      nameservers:
-                      addresses:
-                        - 8.8.8.8
-                        - 8.8.4.4
-	EOF
+cat > "$mountpoint"/etc/netplan/01-"$ethernetinterface".yaml <<-EOF
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    $ethernetinterface:
+      dhcp4: no
+      addresses:
+        - 192.168.100.10/24
+      gateway4: 192.168.100.2
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4
+EOF
 
 	##4.4 bind virtual filesystems from LiveCD to new system
 	mount --rbind /dev  "$mountpoint"/dev
@@ -640,6 +640,18 @@ systemsetupFunc_part2(){
 		
 #		apt install --yes --no-install-recommends dkms wget nano htop gdisk
 		apt install --yes wget nano htop gdisk openssh-server 
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+cat > /etc/ssh/sshd_config <<-EOF
+Include /etc/ssh/sshd_config.d/*.conf
+Port 1992
+PasswordAuthentication yes
+KbdInteractiveAuthentication no
+UsePAM yes
+X11Forwarding yes
+PrintMotd no
+AcceptEnv LANG LC_*
+Subsystem       sftp    /usr/lib/openssh/sftp-server
+EOF
 #		apt install -yq software-properties-common
 #		DEBIAN_FRONTEND=noninteractive apt-get -yq install zfs-dkms
 #		apt install --yes zfsutils-linux
@@ -872,6 +884,7 @@ systemsetupFunc_part7(){
 		then
 			apt install -y openssh-server
 		fi
+
 		##6.2 exit chroot
 		echo 'Exiting chroot.'
 	EOCHROOT
@@ -1296,11 +1309,16 @@ createdatapool(){
 	fi
 		
 	##automount with zfs-mount-generator
-	touch /etc/zfs/zfs-list.cache/"$datapool"
+	#touch /etc/zfs/zfs-list.cache/"$datapool"
 
 	##Set data pool key to use rpool key for single unlock at boot. So data pool uses the same password as the root pool.
 	datapool_keyloc="/etc/zfs/$RPOOL.key"
-
+if [ -f $datapool_keyloc ]; then echo "Exists ";
+else  echo "Not Exists ";
+cat > $datapool_keyloc <<-EOF
+$PASSWORD
+EOF
+fi
 	##Create data pool
 	create_dpool_Func(){
 		echo "$datapoolmount"
@@ -1369,16 +1387,16 @@ createdatapool(){
 	sh "$zpool_create_temp" 
 	
 	##Verify that zed updated the cache by making sure the cache file is not empty.
-	cat /etc/zfs/zfs-list.cache/"$datapool"
+#	cat /etc/zfs/zfs-list.cache/"$datapool"
 	##If it is empty, force a cache update and check again.
 	##Note can take a while. c.30 seconds for loop to succeed.
-	while [ ! -s /etc/zfs/zfs-list.cache/"$datapool" ]
-	do
-		##reset any pool property to update cache files
-		zfs set canmount=on "$datapool"
-		sleep 1
-	done
-	cat /etc/zfs/zfs-list.cache/"$datapool"	
+#	while [ ! -s /etc/zfs/zfs-list.cache/"$datapool" ]
+#	do
+#		##reset any pool property to update cache files
+#		zfs set canmount=on "$datapool"
+#		sleep 1
+#	done
+#	cat /etc/zfs/zfs-list.cache/"$datapool"	
 	
 	##Create link to datapool mount point in user home directory.
 	ln -s "$datapoolmount" "/home/$user/"
@@ -1491,7 +1509,7 @@ case "${1-default}" in
                 createdocker
         ;;
         vege)
-                echo "Setup Docker"
+                echo "Setup vege"
                 read -r _
 		systemsetupFunc_part7
                 before_reboot
