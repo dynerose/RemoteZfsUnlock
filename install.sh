@@ -1473,7 +1473,8 @@ postreboot(){
 
 setup_necessary(){
 echo "1."
-apt install -y mc pv htop
+apt-get -y install aptitude
+apt install -y mc pv htop 
 echo "2."
 apt install -y build-essential
 echo "3."
@@ -1482,10 +1483,10 @@ echo "4."
 apt install -y curl  git
 echo "5."
 apt install -y p7zip-full p7zip-rar
-cd $BACKUPPATH
 # apdatapoolmount
 BACKUPPATH=$datapoolmount\BACKUPS
 mkdir -p $BACKUPPATH
+cd $BACKUPPATH
 wget https://github.com/teejee2008/aptik/releases/download/v18.8/aptik-v18.8-amd64.deb
 dpkg -i aptik-v18.8-amd64.deb
 }
