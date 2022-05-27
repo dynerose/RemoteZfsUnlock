@@ -79,6 +79,7 @@ remoteacces_port=2222
 remoteaccess_netmask="255.255.255.0" #Remote access subnet mask. Not used for "dhcp" automatic IP configuration.
 ethernetinterface="$(basename "$(find /sys/class/net -maxdepth 1 -mindepth 1 -name "${ethprefix}*")")"
 echo "$ethernetinterface"
+datum_now=$(date "+%Y.%m.%d")
 
 ##Check for root priviliges
 if [ "$(id -u)" -ne 0 ]; then
@@ -1157,6 +1158,7 @@ EOFD
 # Start Kodi on boot
 systemctl enable kodi
 fi
+zfs snapshot $RPOOL@$datum_now.2.Kodi.Start -r
 }
 
 
@@ -1454,7 +1456,7 @@ systemsetupFunc_part51
 		fi
 	}
 	logcopy
-	
+	zfs snapshot $RPOOL@$datum_now.1.Alap -r
 	echo "Reboot."
 	echo "Post reboot login as root and run script with postreboot function enabled."
 	echo "Script should be in the root login dir following reboot (/root/)"
@@ -1473,24 +1475,54 @@ postreboot(){
 	echo "Install complete: ${distro_variant}."
 }
 
-setup_necessary(){
+setup_motd(){
+apt install -y  figlet toilet
+echo nano /etc/ssh/sshd_config
+echo    Banner /etc/issue.net
+echo nano /etc/issue.net
+echo    ##Create a MOTD banner ( optional )
+echo #nano  /etc/motd
+echo #sudo systemctl reload ssh.service
+}
+
+setup_alap(){
 echo "1."
 apt-get -y install aptitude
 apt install -y mc pv htop rsync
 echo "2."
 apt install -y build-essential
 echo "3."
-apt install -y net-tools nmap dnsutils  
+apt install -y net-tools nmap dnsutils
 echo "4."
 apt install -y curl  git
 echo "5."
 apt install -y p7zip-full p7zip-rar
+software-properties-common sshpass  whois mc
+iptables rsync
+# cops
+apt-get install -y php7.0-gd php7.0-sqlite3 php7.0-json php7.0-intl php7.0-xml php7.0-mbstring php7.0-zip
 # apdatapoolmount
 BACKUPPATH=$datapoolmount\BACKUPS
 mkdir -p $BACKUPPATH
 cd $BACKUPPATH
 wget https://github.com/teejee2008/aptik/releases/download/v18.8/aptik-v18.8-amd64.deb
 dpkg -i aptik-v18.8-amd64.deb
+}
+setup_alapbeallitasok(){
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+}
+
+setup_transmission(){
+echo "Setup transmission-daemon"
+}
+
+setup_necessary(){
+setup_alap
+setup_motd
+setup_alapbeallitasok
+setup_transmission
 }
 
 case "${1-default}" in
