@@ -1155,6 +1155,7 @@ ResultInactive=yes
 ResultActive=yes
 EOFD
 
+apt install -y kodi-vfs-libarchive
 # Start Kodi on boot
 systemctl enable kodi
 fi
